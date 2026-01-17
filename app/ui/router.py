@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from fastapi import APIRouter, Request, Form, HTTPException
 from fastapi.templating import Jinja2Templates
 
@@ -5,7 +7,10 @@ from app.core.config import TEMPLATE_PATH
 from app.services.jira_service import get_worklog_summary
 
 router = APIRouter()
-templates = Jinja2Templates(directory=TEMPLATE_PATH)
+BASE_DIR = Path(__file__).resolve().parents[2]
+directory = BASE_DIR / TEMPLATE_PATH
+
+templates = Jinja2Templates(directory=str(directory))
 
 
 @router.get("/ui/worklogs", tags=["UI"])
