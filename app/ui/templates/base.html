@@ -1,207 +1,59 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Jira Worklog Summary</title>
-    <style>
-        body {
-            font-family: "Segoe UI", Arial, sans-serif;
-            margin: 0;
-            background: #f5f7fa;
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <link rel="stylesheet" href="/static/css/main.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        border: "hsl(var(--border))",
+                        input: "hsl(var(--input))",
+                        ring: "hsl(var(--ring))",
+                        background: "hsl(var(--background))",
+                        foreground: "hsl(var(--foreground))",
+                        primary: {
+                            DEFAULT: "hsl(var(--primary))",
+                            foreground: "hsl(var(--primary-foreground))",
+                        },
+                        secondary: {
+                            DEFAULT: "hsl(var(--secondary))",
+                            foreground: "hsl(var(--secondary-foreground))",
+                        },
+                        destructive: {
+                            DEFAULT: "hsl(var(--destructive))",
+                            foreground: "hsl(var(--destructive-foreground))",
+                        },
+                        muted: {
+                            DEFAULT: "hsl(var(--muted))",
+                            foreground: "hsl(var(--muted-foreground))",
+                        },
+                        accent: {
+                            DEFAULT: "hsl(var(--accent))",
+                            foreground: "hsl(var(--accent-foreground))",
+                        },
+                        card: {
+                            DEFAULT: "hsl(var(--card))",
+                            foreground: "hsl(var(--card-foreground))",
+                        },
+                    },
+                    borderRadius: {
+                        lg: "var(--radius)",
+                        md: "calc(var(--radius) - 2px)",
+                        sm: "calc(var(--radius) - 4px)",
+                    },
+                },
+            },
         }
-
-        /* Sticky header (red-marked section) */
-        .header {
-            position: sticky;
-            top: 0;
-            z-index: 1000;
-            background: #ffffff;
-            border-bottom: 2px solid #e0e0e0;
-            padding: 20px 30px;
-        }
-
-        .header h2 {
-            margin: 0 0 8px 0;
-        }
-
-        /* User Profile */
-        .user-profile {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 8px 12px;
-            background: #f4f5f7;
-            border-radius: 6px;
-            border: 1px solid #dfe1e6;
-        }
-
-        .user-avatar {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            object-fit: cover;
-            border: 2px solid #dfe1e6;
-        }
-
-        .user-avatar-fallback {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background: #0052cc;
-            color: white;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 600;
-            font-size: 14px;
-            border: 2px solid #dfe1e6;
-        }
-
-        .user-details {
-            display: flex;
-            flex-direction: column;
-            gap: 2px;
-        }
-
-        .user-name {
-            font-weight: 600;
-            font-size: 14px;
-            color: #172b4d;
-        }
-
-        .user-email {
-            font-size: 12px;
-            color: #5e6c84;
-        }
-
-        .user-meta {
-            font-size: 11px;
-            color: #8993a4;
-        }
-
-        .logout-button {
-            padding: 6px 12px;
-            background: #de350b;
-            color: white;
-            text-decoration: none;
-            border-radius: 4px;
-            font-size: 14px;
-            font-weight: 500;
-            transition: background 0.2s;
-        }
-
-        .logout-button:hover {
-            background: #bf2600;
-        }
-
-        .help-link {
-            font-size: 14px;
-            margin-bottom: 15px;
-        }
-
-        .help-link a {
-            color: #0052cc;
-            text-decoration: none;
-        }
-
-        .help-link a:hover {
-            text-decoration: underline;
-        }
-
-        /* Form row */
-        .form-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr auto;
-            gap: 12px;
-            align-items: end;
-        }
-
-        .form-group {
-            display: flex;
-            flex-direction: column;
-            font-size: 14px;
-        }
-
-        input[type="text"],
-        input[type="date"] {
-            padding: 6px 8px;
-            font-size: 14px;
-        }
-
-        button {
-            padding: 8px 14px;
-            background: #0052cc;
-            color: #fff;
-            border: none;
-            cursor: pointer;
-            font-weight: 600;
-        }
-
-        button:hover {
-            background: #003d99;
-        }
-
-        /* Scrollable content */
-        .content {
-            padding: 25px 30px;
-        }
-
-        /* Day card */
-        .day {
-            background: #ffffff;
-            border-radius: 6px;
-            padding: 16px 20px;
-            margin-bottom: 25px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-        }
-
-        .day-title {
-            font-size: 18px;
-            font-weight: 600;
-            margin-bottom: 12px;
-            color: #172b4d;
-        }
-
-        .summary {
-            color: #0052cc;
-            font-weight: 600;
-        }
-
-        /* Issue card */
-        .issue {
-            border-left: 4px solid #0052CC;
-            padding: 10px 14px;
-            margin: 12px 0;
-            background: #fafbfc;
-        }
-
-        .issue-title {
-            font-weight: 600;
-        }
-
-        .issue-meta {
-            font-size: 13px;
-            color: #555;
-            margin-bottom: 4px;
-        }
-
-        .worklog {
-            margin-left: 18px;
-            font-size: 14px;
-            margin-top: 4px;
-        }
-
-        .no-data {
-            background: #fff3cd;
-            border: 1px solid #ffeeba;
-            color: #856404;
-            padding: 20px;
-            border-radius: 6px;
-            margin-top: 20px;
-        }
-
-    </style>
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 </head>
-<body>
+<body class="antialiased">
 
 {% block content %}{% endblock %}
 

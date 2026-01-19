@@ -8,8 +8,10 @@ if __name__ == "__main__":
 
 from fastapi import FastAPI
 from fastapi.responses import RedirectResponse
+from fastapi.staticfiles import StaticFiles
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response as StarletteResponse
+from pathlib import Path
 
 from app.api.v1.worklogs import router as worklogs_router
 from app.ui.router import router as ui_router
@@ -17,6 +19,12 @@ from app.auth.router import router as auth_router
 from app.core.session import apply_session_cookies
 
 app = FastAPI(title="Jira Worklog Summary API", version="1.0.0")
+
+BASE_DIR = Path(__file__).resolve().parent
+STATIC_DIR = BASE_DIR / "static"
+
+if STATIC_DIR.exists():
+    app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
 
 class SessionCookieMiddleware(BaseHTTPMiddleware):

@@ -1,20 +1,26 @@
 {% extends "base.html" %}
 {% block content %}
 
-<div style="display: flex; justify-content: center; align-items: center; min-height: 80vh;">
-    <div style="background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); text-align: center; max-width: 400px;">
-        <h2 style="margin-top: 0; color: #172b4d;">Jira Worklog Summary</h2>
-        <p style="color: #5e6c84; margin-bottom: 30px;">Please authenticate with Jira to continue</p>
-        
-        <a href="/auth/authorize" style="display: inline-block; padding: 12px 24px; background: #0052cc; color: white; text-decoration: none; border-radius: 4px; font-weight: 600; transition: background 0.2s;">
-            Login with Jira
-        </a>
-        
-        <style>
-            a:hover {
-                background: #003d99 !important;
-            }
-        </style>
+<div class="flex min-h-screen items-center justify-center px-4">
+    <div class="w-full max-w-md">
+        <div class="rounded-lg border bg-card p-8 shadow-lg">
+            <div class="text-center space-y-6">
+                <div class="space-y-4">
+                    <div class="flex justify-center">
+                        <img src="/static/img/logo.png" alt="Stabilix Logo" class="h-12 w-auto">
+                    </div>
+                    <h1 class="text-3xl font-bold tracking-tight">Jira Worklog Summary</h1>
+                    <p class="text-muted-foreground">
+                        Please authenticate with Jira to continue
+                    </p>
+                </div>
+                
+                <a href="/auth/authorize" 
+                   class="inline-flex w-full items-center justify-center rounded-md bg-primary px-6 py-3 text-sm font-medium text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+                    Login with Jira
+                </a>
+            </div>
+        </div>
     </div>
 </div>
 
