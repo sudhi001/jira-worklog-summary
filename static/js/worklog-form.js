@@ -11,6 +11,8 @@ class WorklogForm {
         }
         
         this.flatpickr = null;
+        this.currentView = this.getStoredView() || 'card';
+        this.currentData = null;
         this.init();
     }
     
@@ -18,19 +20,84 @@ class WorklogForm {
         this.setDefaultDates();
         this.initializeDateRangePicker();
         this.attachEventListeners();
+        this.initializeViewToggle();
         this.loadInitialData();
     }
     
+    getStoredView() {
+        try {
+            return localStorage.getItem('worklogView') || 'card';
+        } catch (e) {
+            return 'card';
+        }
+    }
+    
+    setStoredView(view) {
+        try {
+            localStorage.setItem('worklogView', view);
+        } catch (e) {
+            console.warn('Failed to store view preference');
+        }
+    }
+    
+    initializeViewToggle() {
+        const toggleButton = document.getElementById('viewToggle');
+        if (toggleButton) {
+            this.updateToggleButton();
+            toggleButton.addEventListener('click', () => this.toggleView());
+        }
+    }
+    
+    toggleView() {
+        this.currentView = this.currentView === 'card' ? 'table' : 'card';
+        this.setStoredView(this.currentView);
+        this.updateToggleButton();
+        if (this.currentData) {
+            this.renderResults(this.currentData);
+        }
+    }
+    
+    updateToggleButton() {
+        const toggleButton = document.getElementById('viewToggle');
+        const toggleText = toggleButton?.querySelector('.view-toggle-text');
+        const svg = toggleButton?.querySelector('svg');
+        if (toggleButton && toggleText && svg) {
+            if (this.currentView === 'table') {
+                toggleText.textContent = 'Card';
+                svg.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path>';
+            } else {
+                toggleText.textContent = 'Table';
+                svg.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path>';
+            }
+        }
+    }
+    
     loadInitialData() {
+        const serverDataScript = document.getElementById('serverData');
         const resultsContainer = document.getElementById('resultsContainer');
-        const hasExistingData = resultsContainer && resultsContainer.querySelector('.grid');
         
-        if (!hasExistingData) {
-            const startDate = this.startDateInput.value;
-            const endDate = this.endDateInput.value;
+        if (serverDataScript) {
+            try {
+                const data = JSON.parse(serverDataScript.textContent);
+                this.currentData = data;
+                
+                if (this.currentView === 'table') {
+                    resultsContainer.innerHTML = '';
+                    this.renderResults(data);
+                }
+            } catch (e) {
+                console.warn('Failed to parse server data', e);
+            }
+        } else {
+            const hasExistingData = resultsContainer && resultsContainer.querySelector('[data-day-card]');
             
-            if (startDate && endDate) {
-                this.submitFormAsync();
+            if (!hasExistingData) {
+                const startDate = this.startDateInput.value;
+                const endDate = this.endDateInput.value;
+                
+                if (startDate && endDate) {
+                    this.submitFormAsync();
+                }
             }
         }
     }
@@ -255,6 +322,7 @@ class WorklogForm {
             }
             
             const data = await response.json();
+            this.currentData = data;
             this.renderResults(data);
         } catch (error) {
             console.error('Error fetching worklogs:', error);
@@ -286,6 +354,11 @@ class WorklogForm {
                     </p>
                 </div>
             `;
+            return;
+        }
+        
+        if (this.currentView === 'table') {
+            this.renderTableView(data, resultsContainer);
             return;
         }
         
@@ -411,6 +484,69 @@ class WorklogForm {
         
         resultsContainer.innerHTML = `<div class="space-y-4">${html}</div>`;
         this.attachDetailsToggleListeners();
+    }
+    
+    renderTableView(data, resultsContainer) {
+        const rows = [];
+        
+        data.forEach(day => {
+            day.issues.forEach(issue => {
+                issue.worklogs.forEach(worklog => {
+                    rows.push({
+                        date: day.workDateFormatted,
+                        issueKey: issue.issueKey,
+                        issueSummary: issue.issueSummary,
+                        timeSpent: worklog.timeSpentFormatted,
+                        comment: worklog.comment || '',
+                        reportedBy: issue.reportedBy.displayName
+                    });
+                });
+            });
+        });
+        
+        if (rows.length === 0) {
+            resultsContainer.innerHTML = `
+                <div class="rounded-lg border border-yellow-200 bg-yellow-50 p-6 text-yellow-800">
+                    <h3 class="text-lg font-semibold mb-2">No worklogs found</h3>
+                    <p class="text-sm">
+                        There are no worklogs available for the selected date range.<br>
+                        Please try a different date range.
+                    </p>
+                </div>
+            `;
+            return;
+        }
+        
+        const tableHtml = `
+            <div class="overflow-x-auto rounded-lg border border-border">
+                <table class="w-full border-collapse">
+                    <thead>
+                        <tr class="bg-muted/50 border-b border-border">
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Date</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Issue</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Summary</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Time</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Comment</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Reported By</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${rows.map((row, index) => `
+                            <tr class="border-b border-border hover:bg-muted/30 transition-colors ${index % 2 === 0 ? 'bg-card' : 'bg-muted/10'}">
+                                <td class="px-4 py-3 text-sm text-foreground whitespace-nowrap">${this.escapeHtml(row.date)}</td>
+                                <td class="px-4 py-3 text-sm font-semibold text-primary whitespace-nowrap">${this.escapeHtml(row.issueKey)}</td>
+                                <td class="px-4 py-3 text-sm text-foreground">${this.escapeHtml(row.issueSummary)}</td>
+                                <td class="px-4 py-3 text-sm font-medium text-primary whitespace-nowrap">${this.escapeHtml(row.timeSpent)}</td>
+                                <td class="px-4 py-3 text-sm text-foreground/80 max-w-md">${row.comment ? this.escapeHtml(row.comment) : '<span class="text-muted-foreground italic">No comment</span>'}</td>
+                                <td class="px-4 py-3 text-sm text-muted-foreground whitespace-nowrap">${this.escapeHtml(row.reportedBy)}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+        `;
+        
+        resultsContainer.innerHTML = tableHtml;
     }
     
     attachDetailsToggleListeners() {

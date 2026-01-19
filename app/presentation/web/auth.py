@@ -43,7 +43,10 @@ def authorize(request: Request):
 @router.get(ROUTES["AUTH_CALLBACK"], tags=[API_TAGS["AUTH"]])
 def callback(request: Request, code: str = None, state: str = None, error: str = None):
     if error:
-        logger.error("OAuth callback error", extra={"error": error})
+        logger.warning("OAuth callback error", extra={"error": error})
+        if error == "access_denied":
+            clear_session(request)
+            return RedirectResponse(url=ROUTES["AUTH_DENIED"], status_code=302)
         raise ValidationError(f"OAuth error: {error}")
     
     if not code:
@@ -89,6 +92,11 @@ def callback(request: Request, code: str = None, state: str = None, error: str =
 def logout(request: Request):
     clear_session(request)
     return RedirectResponse(url=ROUTES["AUTH_LOGIN"], status_code=302)
+
+
+@router.get(ROUTES["AUTH_DENIED"], tags=[API_TAGS["AUTH"]])
+def denied(request: Request):
+    return templates.TemplateResponse("auth_denied.html", {"request": request})
 
 
 @router.get(ROUTES["AUTH_ME"], tags=[API_TAGS["AUTH"]])

@@ -2,9 +2,11 @@
 
 from pathlib import Path
 from typing import Optional
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, JSONResponse
+from starlette.exceptions import HTTPException as StarletteHTTPException
+from fastapi.templating import Jinja2Templates
 
 from app.core.error_handler import global_exception_handler
 from app.core.exceptions import BaseApplicationException
@@ -12,8 +14,32 @@ from app.core.middleware import SessionCookieMiddleware
 from app.core.constants import ROUTES
 
 
+async def not_found_handler(request: Request, exc: StarletteHTTPException):
+    """Handle 404 Not Found errors with appropriate response format."""
+    if exc.status_code != 404:
+        return await global_exception_handler(request, exc)
+    
+    if request.url.path.startswith("/api/"):
+        return JSONResponse(
+            status_code=404,
+            content={
+                "error": "NOT_FOUND",
+                "message": "Resource not found",
+                "details": {"path": request.url.path}
+            }
+        )
+    
+    templates = Jinja2Templates(directory=str(Path(__file__).resolve().parent.parent.parent / "templates"))
+    return templates.TemplateResponse(
+        "404.html",
+        {"request": request, "path": request.url.path},
+        status_code=404
+    )
+
+
 def configure_exception_handlers(app: FastAPI) -> None:
     """Configure global exception handlers."""
+    app.add_exception_handler(StarletteHTTPException, not_found_handler)
     app.add_exception_handler(BaseApplicationException, global_exception_handler)
     app.add_exception_handler(Exception, global_exception_handler)
 

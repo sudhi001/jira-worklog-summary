@@ -17,6 +17,7 @@ ROUTES = {
     "AUTH_CALLBACK": "/auth/callback",
     "AUTH_LOGOUT": "/auth/logout",
     "AUTH_ME": "/auth/me",
+    "AUTH_DENIED": "/auth/denied",
     "API_WORKLOGS_SUMMARY": f"{API_V1_PREFIX}/jira-worklogs/summary"
 }
 
